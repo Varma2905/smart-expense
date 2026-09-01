@@ -1,13 +1,19 @@
 import jwt from 'jsonwebtoken';
 
+const getSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return secret;
+};
+
 export const generateToken = (userId) => {
-  const secret = process.env.JWT_SECRET || 'smartexpense_super_secret_jwt_key_2026_production_quality';
-  return jwt.sign({ id: userId }, secret, {
+  return jwt.sign({ id: userId }, getSecret(), {
     expiresIn: '30d',
   });
 };
 
 export const verifyToken = (token) => {
-  const secret = process.env.JWT_SECRET || 'smartexpense_super_secret_jwt_key_2026_production_quality';
-  return jwt.verify(token, secret);
+  return jwt.verify(token, getSecret());
 };
