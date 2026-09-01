@@ -4,32 +4,47 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongoMemoryServer = null;
 
 export const connectDB = async () => {
-  // Reuse existing database connection in serverless environment
+  // Reuse active database connection in serverless environment
   if (mongoose.connection.readyState >= 1) {
     return;
   }
 
-  try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/smartexpense';
-    
-    // Set connection options with timeout so fallback happens fast if local mongo is down
-    const options = {
-      serverSelectionTimeoutMS: 3000,
-    };
+  const mongoUri = process.env.MONGO_URI;
 
-    await mongoose.connect(mongoUri, options);
-    console.log(`[MongoDB] Connected successfully to ${mongoose.connection.host}`);
-  } catch (error) {
-    console.warn(`[MongoDB] Could not connect to primary URI (${error.message}). Initializing In-Memory Mongo Server...`);
+  if (mongoUri) {
     try {
-      mongoMemoryServer = await MongoMemoryServer.create();
-      const uri = mongoMemoryServer.getUri();
-      await mongoose.connect(uri);
-      console.log(`[MongoDB Memory Server] Connected successfully to ${uri}`);
-    } catch (memErr) {
-      console.error('[MongoDB] Memory server error:', memErr);
-      process.exit(1);
+      const options = {
+        serverSelectionTimeoutMS: 5000,
+      };
+      await mongoose.connect(mongoUri, options);
+      console.log(`[MongoDB] Connected successfully to Atlas/Remote DB`);
+      return;
+    } catch (error) {
+      console.error(`[MongoDB] Primary connection error: ${error.message}`);
     }
+  }
+
+  // If on Vercel or production and MONGO_URI is missing/failing
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    console.warn(`[MongoDB] Running on Vercel/Production without a working MONGO_URI.`);
+    try {
+      const fallbackUri = mongoUri || 'mongodb://localhost:27017/smartexpense';
+      await mongoose.connect(fallbackUri, { serverSelectionTimeoutMS: 3000 });
+    } catch (err) {
+      console.error(`[MongoDB] Database connection failed: ${err.message}. Please set MONGO_URI in Vercel Environment Variables.`);
+    }
+    return;
+  }
+
+  // Local development fallback: MongoMemoryServer
+  try {
+    console.warn(`[MongoDB] Initializing In-Memory Mongo Server for local dev...`);
+    mongoMemoryServer = await MongoMemoryServer.create();
+    const uri = mongoMemoryServer.getUri();
+    await mongoose.connect(uri);
+    console.log(`[MongoDB Memory Server] Connected successfully to ${uri}`);
+  } catch (memErr) {
+    console.error('[MongoDB] Memory server error:', memErr);
   }
 };
 

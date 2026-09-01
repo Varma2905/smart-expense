@@ -23,6 +23,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Vercel Request URL Normalizer
+app.use((req, res, next) => {
+  if (req.query && req.query.url) {
+    const rawUrl = req.query.url.startsWith('/') ? req.query.url : '/' + req.query.url;
+    req.url = rawUrl;
+  }
+  next();
+});
+
 // Root welcome endpoint
 const welcomeHandler = (req, res) => {
   res.json({
@@ -49,7 +58,7 @@ const healthHandler = (req, res) => {
 app.get('/api/health', healthHandler);
 app.get('/health', healthHandler);
 
-// Mount API Routes both with /api prefix and without to handle Vercel route rewrites seamlessly
+// Mount API Routes under both /api and root paths
 const routes = [
   ['/auth', authRoutes],
   ['/transactions', transactionRoutes],
