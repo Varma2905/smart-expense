@@ -4,6 +4,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongoMemoryServer = null;
 
 export const connectDB = async () => {
+  // Reuse existing database connection in serverless environment
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/smartexpense';
     
