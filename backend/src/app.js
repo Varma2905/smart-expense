@@ -23,6 +23,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root welcome endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'SmartExpense Backend API Server is running smoothly',
+    health: '/api/health',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Apply rate limiting to all API requests
 app.use('/api', apiLimiter);
 
