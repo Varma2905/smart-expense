@@ -164,3 +164,4 @@ All financial calculations (Balance, Income, Expenses, Savings, Savings Rate, Ca
 ## 📄 License
 MIT License. Free for educational and commercial portfolio use.
 # smart-expense
+# smart-expense
