@@ -24,37 +24,48 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Root welcome endpoint
-app.get('/', (req, res) => {
+const welcomeHandler = (req, res) => {
   res.json({
     success: true,
     message: 'SmartExpense Backend API Server is running smoothly',
     health: '/api/health',
     timestamp: new Date().toISOString(),
   });
-});
+};
+app.get('/', welcomeHandler);
+app.get('/api', welcomeHandler);
 
 // Apply rate limiting to all API requests
 app.use('/api', apiLimiter);
 
 // Health Check
-app.get('/api/health', (req, res) => {
+const healthHandler = (req, res) => {
   res.json({
     success: true,
     message: 'SmartExpense API Server is running smoothly',
     timestamp: new Date().toISOString(),
   });
-});
+};
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/budgets', budgetRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/recurring', recurringRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/settings', settingsRoutes);
+// Mount API Routes both with /api prefix and without to handle Vercel route rewrites seamlessly
+const routes = [
+  ['/auth', authRoutes],
+  ['/transactions', transactionRoutes],
+  ['/dashboard', dashboardRoutes],
+  ['/budgets', budgetRoutes],
+  ['/analytics', analyticsRoutes],
+  ['/recurring', recurringRoutes],
+  ['/reports', reportRoutes],
+  ['/ai', aiRoutes],
+  ['/settings', settingsRoutes],
+];
+
+routes.forEach(([path, router]) => {
+  app.use(`/api${path}`, router);
+  app.use(path, router);
+});
 
 // Error Handling
 app.use(notFound);
